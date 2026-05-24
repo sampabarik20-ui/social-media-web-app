@@ -3,18 +3,18 @@
 A full stack  social media web application built while learning MERN stack concepts. Users can create accounts, interact with posts, and experience frontend-backend communication.
 
 ## Tech Stack
-Frontend:
+### Frontend:
 - React
 - HTML
 - CSS
 - JavaScript
 - Vite
 
-Backend:
+### Backend:
 - Node.js
 - Express.js
 
-Database:
+### Database:
 - MongoDB
 
 ## Features
@@ -40,12 +40,12 @@ JWT_SECRET=your_secret
 
 ## Installation
 
-Backend:
+### Backend:
 cd backend
 npm install
 npm start
 
-Frontend:
+### Frontend:
 cd frontend
 npm install
 npm run dev
