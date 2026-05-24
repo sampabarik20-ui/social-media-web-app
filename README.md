@@ -26,28 +26,34 @@ A full stack  social media web application built while learning MERN stack conce
 
 ## Project Structure
 
-Social-media-web-app/
-frontend/
-backend/
-.gitignore
-README.md
+social-media-web-app/
+│
+├── frontend/
+├── backend/
+├── .gitignore
+└── README.md
 
 ## Environment Variables
-Create backend/.env
+Create `backend/.env`
 
 DB_URI=your_connection_string
+
 JWT_SECRET=your_secret
 
 ## Installation
 
 ### Backend:
 cd backend
+
 npm install
+
 npm start
 
 ### Frontend:
 cd frontend
+
 npm install
+
 npm run dev
 
 ## Learning Outcome
