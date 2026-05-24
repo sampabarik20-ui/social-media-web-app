@@ -25,8 +25,12 @@ Database:
 - Database connectivity
 
 ## Project Structure
+
+Social-media-web-app/
 frontend/
 backend/
+.gitignore
+README.md
 
 ## Environment Variables
 Create backend/.env
