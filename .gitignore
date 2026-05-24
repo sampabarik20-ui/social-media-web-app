@@ -45,12 +45,7 @@ Thumbs.db
 /data/db/
 uploads/
 # Other dependencies
-package-lock.json
-yarn.lock
-pnpm-lock.yaml
-.env
-.env.local
 backend/.env
-backend/uploads
+backend/uploads/
 /backend/uploads/*
 !/backend/uploads/default.jpg
