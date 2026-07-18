@@ -7,7 +7,19 @@ import Login from "./pages/Login";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Profile from "./pages/Profile";
 import UpdateProfile from "./pages/UpdateProfile";
+import { useEffect } from "react";
+import { useDispatch } from "react-redux";
+import { fetchCurrentUser } from "./reducers/authReducer";
+
 function App() {
+const dispatch = useDispatch();
+
+useEffect(() => {
+  if (localStorage.getItem("token")) {
+    dispatch(fetchCurrentUser());
+  }
+}, [dispatch]);
+
   return (
     <>
       <Router>

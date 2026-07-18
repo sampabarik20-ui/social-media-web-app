@@ -1,8 +1,17 @@
-// src/components/ProfileUpdateForm.js
-import React, { useState } from 'react';
-import axios from 'axios';
+import { jwtDecode } from "jwt-decode";
+import React, { useState,useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { fetchCurrentUser } from "../reducers/authReducer";
+import api from "../api";
+
 
 const UpdateProfile= () => {
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+
+  const token = localStorage.getItem("token");
+  const currentUser = jwtDecode(token);
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -10,6 +19,24 @@ const UpdateProfile= () => {
   });
   const [profileImage, setProfileImage] = useState(null);
   const [coverImage, setCoverImage] = useState(null);
+
+  useEffect(() => {
+  const fetchUser = async () => {
+    try {
+      const response = await api.get("/users/me");
+
+      setFormData({
+        username: response.data.username || "",
+        email: response.data.email || "",
+        bio: response.data.bio || "",
+      });
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  fetchUser();
+}, []);
 
   const handleChange = (e) => {
     setFormData({
@@ -36,13 +63,10 @@ const UpdateProfile= () => {
     if (coverImage) data.append('coverImage', coverImage);
 
     try {
-      const response = await axios.put('http://localhost:3000/api/users/profile/update', data, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-      alert('Profile updated successfully!');
+       await api.put("/users/profile/update", data);
+       await dispatch(fetchCurrentUser());
+       alert("Profile updated successfully!");
+       navigate(`/profile/${currentUser._id}`, { replace: true });
     } catch (error) {
       console.error(error);
       alert('Failed to update profile.');

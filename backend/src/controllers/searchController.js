@@ -6,22 +6,23 @@ export const searchUsersAndPosts = async (req, res) => {
       const { query } = req.query; // Get search query from request
   
       if (!query) {
-        return res.status(400).json({ message: "Search query is required" });
+        return res.status(400).json(
+          { message: "Search query is required" });
       }
   
       // Search for users (match username, email, bio)
       const users = await User.find({
         $or: [
-          { username: { $regex: query, $options: "i" } }, // Case-insensitive match
+          { username: { $regex: query, $options: "i" } }, 
           { email: { $regex: query, $options: "i" } },
           { bio: { $regex: query, $options: "i" } },
         ],
-      }).select("-password"); // Exclude password from response
+      }).select("-password"); 
   
       // Search for posts (match content)
       const posts = await Post.find({
         content: { $regex: query, $options: "i" },
-      }).populate("postedBy", "username profileImage"); // Populate user details
+      }).populate("postedBy", "username profileImage"); 
   
       res.json({ users, posts });
     } catch (error) {

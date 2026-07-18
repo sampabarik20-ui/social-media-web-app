@@ -1,18 +1,15 @@
-/* eslint-disable react/prop-types */
-
 import { FaEdit, FaPaperPlane, FaTrash } from "react-icons/fa";
 import { formatDistanceToNow } from "date-fns";
 import { useState, useEffect } from "react";
 import useAuth from "../hooks/useAuth";
 import api from "../api";
+import imageUrl from "../utils/imageUrl";
 
 const CommentSection = ({ postId, comments: initialComments }) => {
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(false);
   useEffect(() => {
-    setLoading(true);
     setComments(initialComments);
-    setLoading(false);
   }, [postId, initialComments]);
 
   const [newComment, setNewComment] = useState("");
@@ -20,11 +17,13 @@ const CommentSection = ({ postId, comments: initialComments }) => {
   const [editCommentId, setEditCommentId] = useState(null);
   const [editText, setEditText] = useState("");
   const { getUser } = useAuth();
+  const currentUser = getUser();
 
   const handleCommentSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
+    
     if (!newComment.trim()) return;
+    setLoading(true);
 
     try {
       const response = await api.post(`comments/${postId}`, {
@@ -39,12 +38,11 @@ const CommentSection = ({ postId, comments: initialComments }) => {
     }
   };
   const handleEditComment = (commentId, text) => {
-    console.log(commentId, text);
-
     setEditCommentId(commentId);
     setEditText(text);
   };
   const handleUpdateComment = async () => {
+    if (!editText.trim()) return;
     setLoading(true);
     try {
       await api.put(`comments/update/${editCommentId}`, { text: editText });
@@ -99,7 +97,7 @@ const CommentSection = ({ postId, comments: initialComments }) => {
             return (
               <div key={comment._id} className="d-flex mb-2 border rounded p-2">
                 <img
-                  src={`http://localhost:3000/uploads/${comment.commentedBy.profileImage}`}
+                  src={imageUrl(comment.commentedBy.profileImage)}
                   alt="avatar"
                   className="rounded-circle me-2"
                   style={{ width: "40px", height: "40px", objectFit: "cover" }}
@@ -127,8 +125,10 @@ const CommentSection = ({ postId, comments: initialComments }) => {
                       </button>
                       <button
                         className="btn btn-sm btn-outline-danger mt-1"
-                        onClick={() => setEditCommentId(null)}
-                      >
+                        onClick={() =>{ setEditCommentId(null);
+                           setEditText("");
+                        }}
+                       >
                         Cancel
                       </button>
                     </div>
@@ -136,7 +136,7 @@ const CommentSection = ({ postId, comments: initialComments }) => {
                     <p className="mb-1">{comment.text}</p>
                   )}
                 </div>
-                {getUser().id === comment.commentedBy._id && (
+                {currentUser?.id === comment.commentedBy._id && (
                   <div>
                     <button
                       className="btn btn-sm btn-warning me-1"

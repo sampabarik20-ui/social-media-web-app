@@ -5,13 +5,20 @@ import {
   profile,
   updateProfile,
   followUser,
+  getFollowers,
+  getCurrentUser,
 } from "../controllers/userController.js";
 import authMiddleware from "../middlewares/auth.js";
 import upload from "../config/multer.js";
+
 const userRouter = express.Router();
 
 userRouter.post("/register", register);
 userRouter.post("/login", login);
+userRouter.get("/test", (req, res) => {
+  res.send("Test route works");
+});
+userRouter.get("/me", authMiddleware, getCurrentUser);
 userRouter.get("/profile/:userId", authMiddleware, profile);
 userRouter.put(
   "/profile/update",
@@ -22,5 +29,7 @@ userRouter.put(
   ]),
   updateProfile
 );
+userRouter.get("/followers", authMiddleware, getFollowers);
 userRouter.post("/follow/:id", authMiddleware, followUser);
+
 export default userRouter;

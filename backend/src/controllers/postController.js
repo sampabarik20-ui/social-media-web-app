@@ -7,8 +7,6 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export const createPost = async (req, res) => {
   const { content, userId, username } = req.body;
-  console.log(req.body);
-
   let postedBy = {
     _id: userId,
     username: username,
@@ -17,18 +15,15 @@ export const createPost = async (req, res) => {
   try {
     const post = new Post({
       content,
-      postedBy,
+      postedBy: req.user._id,
       image: req.file ? req.file.filename : null,
     });
     await post.save();
     const populatedPost = await Post.findById(post._id)
       .populate("postedBy", "username profileImage")
       .exec();
-    const notification = new Notification({
-      userId: userId,
-      message: "Your post has been successfully created!",
-    });
-    await notification.save();
+
+   
     const io = req.app.get("io");
 
     io.emit("newPost", {
@@ -61,7 +56,7 @@ export const getPosts = async (req, res) => {
       ...post.toObject(),
       likesCount: post.likes.length,
       hasLiked: req.user
-        ? post.likes.some((like) => like.userId.toString() === req.user.id)
+        ? post.likes.some((like) => like.userId.toString() === req.user._id)
         : false,
     }));
     res.json(postsWithLikes);
@@ -94,10 +89,12 @@ export const getPost = async (req, res) => {
 export const likePost = async (req, res) => {
   try {
     const { postId } = req.params;
-    const userId = req.user.id;
+    const userId = req.user._id;
     const existingLike = await Likes.findOne({ postId, userId });
     const post = await Post.findById(postId);
-    if (!post) return res.status(404).json({ message: "Post not found" });
+
+    if (!post) return res.status(404).json(
+      { message: "Post not found" });
     if (existingLike) {
       await Likes.deleteOne({ postId, userId });
       await Post.findByIdAndUpdate(postId, {
@@ -106,13 +103,28 @@ export const likePost = async (req, res) => {
     } else {
       const like = await Likes.create({ postId, userId });
       await Post.findByIdAndUpdate(postId, { $push: { likes: like._id } });
-      const notification = new Notification({
-        userId: userId,
-        message: "Your post was liked by the user " + req.user.username,
-      });
-      await notification.save();
+      
+    if (post.postedBy.toString() !== req.user._id.toString()) {
+
+    const existingNotification = await Notification.findOne({
+    userId: post.postedBy,
+    message: `${req.user.username} liked your post.`,
+   });
+
+   if (!existingNotification) {
+    const notification = await Notification.create({
+      userId: post.postedBy,
+      message: `${req.user.username} liked your post.`,
+    });
+
+    const io = req.app.get("io");
+
+    io.to(post.postedBy.toString()).emit("notification", {
+      message: notification.message,
+      postId,
+    });
+   }}
       const io = req.app.get("io");
-      // Emit a socket event to the post owner
       io.to(post.postedBy.toString()).emit("notification", {
         message: `Your post was liked by user ${req.user.username}`,
         postId,
@@ -128,12 +140,16 @@ export const likePost = async (req, res) => {
 };
 
 export const updatePost = async (req, res) => {
-  const id = req.params.id;
+  const {id} = req.params;
   const { content } = req.body;
   try {
-    const post = await Post.findByIdAndUpdate(id, { content });
+     const updatedPost = await Post.findByIdAndUpdate(
+      id,
+      { content },
+      { new: true }
+    ).populate("postedBy", "username profileImage");
 
-    res.status(200).json(post);
+    res.status(200).json(updatedPost);
   } catch (err) {
     res.status(500).json({ message: "Server error" });
   }
@@ -141,26 +157,32 @@ export const updatePost = async (req, res) => {
 
 export const rewritePost = async (req, res) => {
   const { content } = req.body;
-  console.log(content);
-  console.log(process.env.GEMINI_API_KEY);
+  
   if (!content.trim()) {
-    return res.status(400).json({ message: "Content is required" });
+    return res.status(400).json(
+      { message: "Content is required" });
   }
   try {
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-    const prompt = `Rewrite this social media post in a more engaging and creative way:\n\n"${content}`;
+    const prompt = `Rewrite this social media post in a more engaging and creative way:\n\n"${content} dont give markdown output also give one answer.`;
     const result = await model.generateContent(prompt);
     const rewrittenContent =
       result.response.candidates?.[0]?.content?.parts
         ?.map((p) => p.text)
         .join(" ") || "Failed to generate response";
 
-    console.log(rewrittenContent);
-
     res.json({ rewrittenContent });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Server error" });
+
+    if (error.response) {
+      console.error(error.response.data);
+   }
+  res.status(500).json({
+    message: error.message,
+    error: error,
+  });
+
   }
 };

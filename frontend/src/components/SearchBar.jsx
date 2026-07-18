@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useState } from "react";
-import axios from "axios";
+import api from "../api";
 import { debounce } from "lodash";
 import { FaSearch } from "react-icons/fa";
 import { Link } from "react-router-dom";
+import imageUrl from "../utils/imageUrl";
 
 const SearchBar = () => {
   const [query, setQuery] = useState("");
@@ -13,7 +14,7 @@ const SearchBar = () => {
   // Fetch Search Results
   const fetchSearchResult = useCallback(
     debounce(async (searchTerm) => {
-      if (!searchTerm) {
+      if (!searchTerm.trim()) {
         setResults({ users: [], posts: [] });
         setLoading(false);
         setShowResults(false);
@@ -21,14 +22,8 @@ const SearchBar = () => {
       }
       setLoading(true);
       try {
-        const { data } = await axios.get(
-          `http://localhost:3000/api/search?query=${searchTerm}`,
-          {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
-            },
-          }
-        );
+        const { data } = await api.get(
+          `search?query=${searchTerm}`,);
         setResults(data);
         setShowResults(true);
       } catch (error) {
@@ -42,6 +37,7 @@ const SearchBar = () => {
 
   useEffect(() => {
     fetchSearchResult(query);
+    // return () => fetchSearchResult.cancel();
   }, [query, fetchSearchResult]);
 
   return (
@@ -59,7 +55,7 @@ const SearchBar = () => {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => setShowResults(true)}
-          onBlur={() => setTimeout(() => setShowResults(false), 200)}
+          onBlur={() => {}}
         />
       </div>
 
@@ -68,9 +64,13 @@ const SearchBar = () => {
         <div
           className="position-absolute shadow p-2 bg-white rounded w-100"
           style={{
-            maxHeight: "300px",
-            overflowY: "auto",
-            zIndex: 2000,
+               position: "absolute",
+               top: "100%",
+               left: 0,
+               right: 0,
+               maxHeight: "300px",
+               overflowY: "auto",
+              zIndex: 9999,
           }}
         >
           {loading && <p className="text-muted text-center">Loading...</p>}
@@ -85,7 +85,7 @@ const SearchBar = () => {
                   className="d-flex align-items-center p-2 border-bottom"
                 >
                   <img
-                    src={`http://localhost:3000/uploads/${user.profileImage}`}
+                    src={imageUrl(user.profileImage)}
                     alt="Profile"
                     className="rounded-circle"
                     width="40"
@@ -94,10 +94,14 @@ const SearchBar = () => {
                   <Link
                     to={`/profile/${user._id}`}
                     className="text-decoration-none ms-2 text-primary"
-                  >
+                    onClick={() => {
+                         setQuery("");
+                         setShowResults(false);
+                     }}
+                   >
                     <div>
                       <span className="fw-bold">{user.username}</span>
-                      <small className="text-muted d-block">{user.bio}</small>
+                      <small className="text-muted d-block">{user.bio?.slice(0, 40)}</small>
                     </div>
                   </Link>
                 </div>
@@ -110,7 +114,12 @@ const SearchBar = () => {
             <div className="mt-2">
               <h6 className="text-primary">Posts</h6>
               {results.posts.map((post) => (
-                <div key={post._id} className="p-2 border-bottom">
+                <div key={post._id} className="p-2 border-bottom"
+                      onClick={() => {
+                          setQuery("");
+                          setShowResults(false);
+                       }}
+                >
                   <h6 className="mb-1">{post.title}</h6>
                   <p className="text-muted">
                     {post.content.substring(0, 80)}...

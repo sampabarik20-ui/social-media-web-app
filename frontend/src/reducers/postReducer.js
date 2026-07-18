@@ -1,5 +1,4 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import axios from "axios";
 import api from "../api";
 
 export const fetchPosts = createAsyncThunk("posts/fetchPosts", async () => { 
@@ -11,6 +10,7 @@ export const fetchPosts = createAsyncThunk("posts/fetchPosts", async () => {
 export const deletePost = createAsyncThunk(
   "posts/deletePost",
   async (postId, { rejectWithValue }) => {
+    console.log(postId);
     try {
       await api.delete(`posts/delete/${postId}`);
       return postId;
@@ -23,37 +23,22 @@ export const deletePost = createAsyncThunk(
 export const likePost = createAsyncThunk(
   "posts/likePost",
   async (postId, { rejectWithValue }) => {
-    console.log("Liking post");
     try {
-      const response = await axios.get(
-        `http://localhost:3000/api/posts/like/${postId}`,
-
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        }
-      );
+      const response = await api.get(`posts/like/${postId}`);
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response.data);
+      return rejectWithValue(error.response?.data ||{
+        message: "Something went wrong",
+      });
     }
   }
 );
 export const addPost = createAsyncThunk(
   "posts/addPost",
   async (postData, { rejectWithValue }) => {
-    console.log(postData)
     try {
-      const response = await axios.post(
-        "http://localhost:3000/api/posts/create",
-        postData,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        }
-      );
+      const response = await api.post("posts/create", postData);
+     
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response.data);
@@ -108,7 +93,8 @@ const postSlice = createSlice({
         console.error(action.payload);
       })
       .addCase(deletePost.fulfilled, (state, action) => {
-        state.posts = state.posts.filter((post) => post._id !== action.payload);
+        state.posts = state.posts.filter(
+          (post) => post._id !== action.payload);
       })
       .addCase(deletePost.rejected, (state, action) => {
         state.error = action.payload;
@@ -118,7 +104,13 @@ const postSlice = createSlice({
       })
       .addCase(updatePost.fulfilled, (state, action) => {
         state.isLoading = false;
-      
+
+        const index = state.posts.findIndex(
+        post => post._id === action.payload._id
+        );
+        if (index !== -1) {
+        state.posts[index] = action.payload;
+        }
       })
       .addCase(updatePost.rejected, (state, action) => {
         state.isLoading = false;

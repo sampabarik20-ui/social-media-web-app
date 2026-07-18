@@ -8,11 +8,21 @@ import RightSidebar from "../components/RightSidebar";
 
 const Home = () => {
   const dispatch = useDispatch();
-  const { posts, isLoading } = useSelector((state) => state.post);
+  const { posts, isLoading, error } = useSelector(
+    (state) => state.post
+  );
 
   useEffect(() => {
     dispatch(fetchPosts());
   }, [dispatch]);
+
+  if (error) {
+     return (
+        <div className="container mt-5 text-center">
+             <p className="text-danger">{error}</p>
+        </div>
+       );
+  }
 
   return (
     <main className="container mt-4">
@@ -31,18 +41,23 @@ const Home = () => {
             </div>
           </div>
 
-          {/* Posts List */}
+          {/* Feed */}
+        
           {isLoading ? (
             <div className="text-center mt-5">
               <div className="spinner-border text-primary" role="status">
                 <span className="visually-hidden">Loading...</span>
               </div>
             </div>
+            ) : posts.length === 0 ? (
+                <p className="text-center text-muted mt-4">
+                  No posts yet. Be the first to create one!
+            </p>
           ) : (
             posts.map((post) => (
-              <div key={post._id} className="card mb-4 shadow-sm">
-                <PostCard post={post} />
-              </div>
+                <PostCard 
+                key={post._id}
+                post={post} />
             ))
           )}
         </div>

@@ -5,50 +5,57 @@ import { BsBellFill } from "react-icons/bs";
 
 const NotificationBell = ({ userId }) => {
   const [notifications, setNotifications] = useState([]);
-  const [newNotification, setNewNotification] = useState(null);
+  
 
   useEffect(() => {
-    const loadNotifications = async () => {
-      try {
-        const response = await api.get(`/notifications/${userId}`);
-        setNotifications(response.data);
-        console.log(response.data);
-        
-      } catch (error) {
-        console.error("Error fetching notifications:", error);
-      }
-    };
+  if (!userId) return;
 
+  const loadNotifications = async () => {
+    try {
+      const response = await api.get(`/notifications/${userId}`);
+      setNotifications(response.data);
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+    }
+  };
+
+  loadNotifications();
+
+  socket.emit("joinRoom", userId);
+
+  socket.on("notification", () => {
     loadNotifications();
+  });
 
-    // Join the Socket.IO room
-    socket.emit("joinRoom", userId);
-
-    // Listen for incoming notifications
-    socket.on("notification", (data) => {
-      setNewNotification(data.message);
-      loadNotifications(); // Refresh the notifications list
-    });
-
-    return () => {
-      socket.off("notification");
-    };
-  }, [userId]); // Removed userId from dependency array
+  return () => {
+    socket.off("notification");
+  };
+}, [userId]); 
 
   const handleMarkAsRead = async (notificationId) => {
+  try {
     await api.put(`notifications/read/${notificationId}`);
+
     setNotifications((prev) =>
       prev.map((notif) =>
-        notif._id === notificationId ? { ...notif, read: true } : notif
+        notif._id === notificationId
+          ? { ...notif, read: true }
+          : notif
       )
     );
-  };
+  } catch (error) {
+    console.error(error);
+  }
+};
 
   const clearAllNotifications = async () => {
-    await api.delete(`/notifications/clear/`);
+  try {
+    await api.delete("/notifications/clear");
     setNotifications([]);
-    setNewNotification(null);
-  };
+  } catch (error) {
+    console.error(error);
+  }
+};
 
   return (
     <div className="dropdown">
@@ -69,9 +76,6 @@ const NotificationBell = ({ userId }) => {
         aria-labelledby="notificationDropdown"
         style={{ maxHeight: "400px", overflowY: "auto", zIndex: 1050 }}
       >
-        {newNotification && (
-          <li className="dropdown-item text-info">{newNotification}</li>
-        )}
         {notifications.length === 0 && (
           <li>
             <p className="dropdown-item text-muted">No notifications yet.</p>

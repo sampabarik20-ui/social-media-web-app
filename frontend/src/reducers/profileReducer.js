@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import api from "../api";
+import { fetchCurrentUser } from "./authReducer";
 
 export const fetchProfile = createAsyncThunk(
   "profile/fetchProfile",
@@ -17,12 +18,16 @@ export const fetchProfile = createAsyncThunk(
 
 export const toggleFollow = createAsyncThunk(
   "profile/toggleFollow",
-  async (id, { getState, rejectWithValue }) => {
+  async (id, {dispatch, rejectWithValue }) => {
     try {
       const response = await api.post(`users/follow/${id}`);
+      dispatch(fetchProfile(id));
+      dispatch(fetchCurrentUser());
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data || "Error toggling follow.");
+      return rejectWithValue(
+        error.response?.data || "Error toggling follow."
+      );
     }
   }
 );
@@ -54,16 +59,16 @@ const profileSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      .addCase(toggleFollow.fulfilled, (state,action) => {
-        if (state.data) {
-          state.data.isFollowing = !state.data.isFollowing;
-          state.data.followers = state.data.isFollowing
-            ? [...state.data.followers, state.data._id]
-            : state.data.followers.filter(
-                (userId) => userId !== state.data._id
-              );
-        }
-      });
+      .addCase(toggleFollow.pending, (state) => {
+       state.loading = true;
+      })
+      .addCase(toggleFollow.fulfilled, (state) => { 
+        state.loading = false;
+     })
+     .addCase(toggleFollow.rejected, (state, action) => {
+          state.loading = false;
+         state.error = action.payload;
+     });
   },
 });
 

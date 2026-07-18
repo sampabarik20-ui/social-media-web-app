@@ -1,10 +1,14 @@
 import React, { useState } from "react";
 import Alert from "../components/Alert";
-import { useNavigate } from "react-router";
-import axios from "axios";
+import { Link, useNavigate } from "react-router-dom";
+import api from "../api";
+import useAuth from "../hooks/useAuth";
+import { useDispatch } from "react-redux";
+import { fetchCurrentUser } from "../reducers/authReducer";
 
 const Login = () => {
-  const navigate = useNavigate();
+
+  const {login} = useAuth();
   const [successMessage, setSuccessMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [loading, setLoading] = useState(false);
@@ -13,20 +17,20 @@ const Login = () => {
     password: "",
   });
 
-  const handleSubmit = async (e) => {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  
+  const handleSubmit = async (e) => {   
     e.preventDefault();
     setLoading(true);
     try {
-      const response = await axios.post(
-        "http://localhost:3000/api/users/login",
-        formData
-      );
+      const response = await api.post("users/login", formData );
       if (!response.data.token) {
         setErrorMessage(response.data.message);
         return;
       }
-      console.log(response.data);
-      localStorage.setItem("token", response.data.token);
+      login(response.data.token);
+      await dispatch(fetchCurrentUser());
       navigate("/");
     } catch (err) {
       setErrorMessage(err.message);
@@ -36,6 +40,7 @@ const Login = () => {
         email: "",
         password: "",
       });
+
     }
   };
 
@@ -75,7 +80,7 @@ const Login = () => {
             </div>
 
             <div className="d-flex justify-content-between mb-4">
-              <a href="/register" className="text-decoration-none">Register here</a>
+              <Link to="/register" className="text-decoration-none">Register here</Link>
             </div>
 
             <button

@@ -1,33 +1,37 @@
-import { jwtDecode } from "jwt-decode";
 import { useEffect, useState } from "react";
+import { jwtDecode } from "jwt-decode";
 
 const useAuth = () => {
-  const token = localStorage.getItem("token");
-  const [isAuthenticated, setIsAuthenticated] = useState(!!token); // Check if the token exists
+  const [token, setToken] = useState(() => localStorage.getItem("token"));
+  const isAuthenticated = !!token;
+
+  useEffect(() => {
+    
+    const syncToken = () => setToken(localStorage.getItem("token"));
+    window.addEventListener("storage", syncToken);
+
+    
+    return () => window.removeEventListener("storage", syncToken);
+  }, []);
 
   const login = (token) => {
-    localStorage.setItem("token", token);
-    setIsAuthenticated(true);
-  };
-
-  const getUser = () => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      try {
-        const decoded = jwtDecode(token);
-        return decoded;
-      } catch (error) {
-        console.error("Invalid token:", error.message);
-        return null;
-      }
-    }
-    return null;
+    localStorage.setItem("token", token);  
+    setToken(token);  
   };
 
   const logout = () => {
     localStorage.removeItem("token");
-    setIsAuthenticated(false);
-    window.location.reload(); // This forces a full reload ensuring the state updates everywhere
+    setToken(null);   
+  };
+
+  const getUser = () => {
+    if (!token) return null;
+    try {
+      return jwtDecode(token);
+    } catch (e) {
+      console.error("Invalid token:", e);
+      return null;
+    }
   };
 
   return { isAuthenticated, login, logout, getUser };

@@ -1,4 +1,4 @@
-/* eslint-disable react/prop-types */
+
 import { useState } from "react";
 import {
   FaThumbsUp,
@@ -17,7 +17,8 @@ import {
   updatePost,
 } from "../reducers/postReducer";
 import useAuth from "../hooks/useAuth";
-import { Link } from "react-router";
+import { Link } from "react-router-dom";
+import imageUrl from "../utils/imageUrl";
 
 const PostCard = ({ post }) => {
   const [showComments, setShowComments] = useState(false);
@@ -32,27 +33,34 @@ const PostCard = ({ post }) => {
     setShowEditModal(true);
     setEditedContent(post.content);
   };
-  const handleUpdate = () => {
-    dispatch(
-      updatePost({ postId: post._id, postData: { content: editedContent } })
-    ).then(() => dispatch(fetchPosts()));
+ const handleUpdate = async () => {
+  try {
+    await dispatch(
+      updatePost({
+        postId: post._id,
+        postData: { content: editedContent },
+      })
+    ).unwrap();
+
     setShowEditModal(false);
-  };
+  } catch (err) {
+    console.error(err);
+  }
+};
   const copyToClipboard = () => {
     navigator.clipboard.writeText(currentURL);
     alert("Link copied to clipboard!");
   };
-  console.log(post);
-
+ 
   return (
-    <div className="card mb-4 shadow-sm" id={post._id}>
-      <div className="card-body">
+    <div className="card mb-4 shadow rounded-4 border-0" id={post._id}>
+      <div className="card-body p-4">
         <div className="d-flex justify-content-between ">
           <div className="d-flex justify-content-start align-items-center gap-2">
             <div className="">
               <img
                 src={
-                  "http://localhost:3000/uploads/" + post.postedBy.profileImage
+                  imageUrl( post.postedBy.profileImage || "default.jpg")
                 }
                 alt="profile"
                 className="rounded-circle"
@@ -65,27 +73,27 @@ const PostCard = ({ post }) => {
                 className="cursor-pointer "
                 style={{ textDecoration: "none" }}
               >
-                <strong>{post.postedBy.username}</strong>{" "}
+                {post.postedBy.username}
               </Link>
 
-              <small>
+              <small className="ms-2 text-muted">
                 {formatDistanceToNow(new Date(post.createdAt), {
                   addSuffix: true,
                 })}
               </small>
             </div>
           </div>
-          {getUser().id === post.postedBy._id && (
+          {getUser()._id === post.postedBy._id && (
             <div className="dropdown">
               <button
-                className="btn btn-outline-secondary btn-sm dropdown-toggle"
+                className="btn"
                 type="button"
                 id="dropdownMenuButton"
                 data-bs-toggle="dropdown"
                 aria-expanded="false"
-              ></button>
+              >:</button>
               <ul
-                className="dropdown-menu"
+                className="dropdown-menu "
                 aria-labelledby="dropdownMenuButton"
               >
                 <li>
@@ -106,19 +114,23 @@ const PostCard = ({ post }) => {
           )}
         </div>
         {post.image && (
-          <div className="text-center mb-3">
+          <div className="text-center mb-3 mt-3">
             <img
-              src={`http://localhost:3000/uploads/${post.image}`}
+              src={imageUrl(post.image)}
               alt="post image"
               className="img-fluid rounded"
-              style={{ maxHeight: "400px", objectFit: "cover" }}
+              style={{ 
+                width: "100%",
+                height: "260px",
+                objectFit: "cover",
+               }}
             />
           </div>
         )}
-        <p>{post.content}</p>
-        <div className="d-flex justify-content-start gap-2">
+        <p className="mt-3 mb-3 fs-6">{post.content}</p>
+        <div className="d-flex flex-wrap gap-2">
           <button
-            className={`btn btn-md ${post.hasLiked ? "btn-primary" : "btn-outline-primary"}`}
+            className={`btn rounded-pill px-3 ${post.hasLiked ? "btn-primary" : "btn-outline-primary"}`}
 
             onClick={() => dispatch(likePost(post._id))}
           >
@@ -126,19 +138,21 @@ const PostCard = ({ post }) => {
             {post.likesCount}
           </button>
           <button
-            className={`btn btn-md ${showComments ? "btn-primary" : "btn-outline-secondary"}`}
+            className={`btn rounded-pill px-3 ${showComments ? "btn-primary" : "btn-outline-secondary"}`}
             onClick={() => setShowComments(!showComments)}
           >
             <FaComment color={showComments ? "blue" : "black"} />{" "}
             {post.comments.length}
           </button>
-          <button className="btn btn-outline-secondary btn-md" onClick={() => setShowShareModal((prev) => !prev)}>
+          <button className="btn btn-outline-secondary rounded-pill px-3" onClick={() => setShowShareModal((prev) => !prev)}>
             <FaShareAlt  /> 
           </button>{" "}
         </div>
+        <div className="mt-3">
         {showComments && (
           <CommentSection postId={post._id} comments={post.comments} />
         )}
+        </div>
       </div>
 
       <div

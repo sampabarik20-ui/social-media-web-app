@@ -7,7 +7,7 @@ import { useState } from "react";
 import { useDispatch } from "react-redux";
 import { addPost } from "../reducers/postReducer";
 import { FaImages, FaMagic } from "react-icons/fa";
-import axios from "axios";
+import api from "../api";
 
 const CreatePostForm = () => {
   const [postContent, setPostContent] = useState("");
@@ -28,38 +28,7 @@ const CreatePostForm = () => {
     }
   };
 
-  // const handleSubmit = async (e) => {
-  //   e.preventDefault();
-  //   setLoading(true);
 
-  //   let imageUrl = null;
-
-
-
-
-  //   try {
-  //     await dispatch(
-  //       addPost({
-  //         content: postContent,
-  //         image: imageUrl || "http://placekitten.com/200/300",
-  //         postedBy: {
-  //           _id: getUser().id,
-  //           username: getUser().username,
-  //         },
-  //       })
-  //     ).unwrap();
-  //     console.log("Post created successfully");
-  //     setPostContent("");
-  //     setImage(null);
-  //     setPreview(null);
-  //   } catch (err) {
-  //     console.log(err.message);
-  //     setError("Failed to create post");
-  //   } finally {
-  //     setLoading(false);
-  //     setPostContent("");
-  //   }
-  // };
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -68,9 +37,8 @@ const CreatePostForm = () => {
     formData.append("content", postContent);
     if (image) formData.append("image", image);
     formData.append("username", getUser().username);
-    formData.append("userId", getUser().id);
-   
-
+    formData.append("userId", getUser()._id);
+    
     try {
       await dispatch(addPost(formData)).unwrap();
       console.log("Post created successfully");
@@ -90,19 +58,14 @@ const CreatePostForm = () => {
   };
 
   const rewritePostWithAI = async (content) => {
+    // alert("Gemini AI is not available yet. Please try again later.");
     if (!content.trim()) return content;
     setAiLoading(true);
 
     try {
-      const response = await axios.post(
-        "http://localhost:3000/api/posts/rewrite",
-        { content },
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        }
-      );
+      const response = await api.post(
+        "posts/rewrite",
+        { content });
       setPostContent(response.data.rewrittenContent);
     } catch (error) {
       console.error("Ai error", error);
@@ -140,7 +103,7 @@ const CreatePostForm = () => {
             <button
               type="button"
               className="btn btn-outline-secondary"
-              disabled={AiLoading}
+              disabled
               onClick={() => rewritePostWithAI(postContent)}
             >
               {AiLoading ? (

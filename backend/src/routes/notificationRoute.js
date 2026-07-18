@@ -6,4 +6,5 @@ const notificationRouter = Router();
 notificationRouter.get("/:userId", authMiddleware, getNotifications);
 notificationRouter.put("/read/:notificationId", authMiddleware, markAsRead);
 notificationRouter.delete("/clear", authMiddleware, clearNotifications);
+
 export default notificationRouter;

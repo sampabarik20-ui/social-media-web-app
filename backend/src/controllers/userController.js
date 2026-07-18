@@ -18,17 +18,17 @@ export const register = async (req, res) => {
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
-    const user = await User.findOne({ email }); // Getting the user from database
+    const user = await User.findOne({ email }); 
     if (!user || !(await bcrypt.compare(password, user.password))) {
-      // checking if the user exists if exists then is the password correct
-      return res.json({ message: "Invalid Credentials" }); // If not then return invalid credentials error
+     
+      return res.json({ message: "Invalid Credentials" });
     }
-    // If the user exists and the password is correct then create a token
+   
     const token = jwt.sign(
       {
-        id: user._id,
+        _id: user._id,
         username: user.username,
-        profileImage: user.profileImage || " ",
+        profileImage: user.profileImage || null,
         coverImage: user.coverImage || " ",
       },
       process.env.JWT_SECRET,
@@ -40,6 +40,7 @@ export const login = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
 export const verify = async (req, res) => {
   try {
     const token = req.header("Authorization").split(" ")[1];
@@ -52,51 +53,72 @@ export const verify = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
+export const getCurrentUser = async (req, res) => {
+  try {
+    // Support both old JWT (id) and new JWT (_id)
+    const userId = req.user._id || req.user.id;
+
+    if (!userId) {
+      return res.status(401).json({
+        message: "Invalid token",
+      });
+    }
+
+    const user = await User.findById(userId).select("-password");
+
+    if (!user) {
+      return res.status(404).json({
+        message: "User not found",
+      });
+    }
+
+    return res.status(200).json(user);
+  } catch (err) {
+    console.error("getCurrentUser Error:", err);
+    return res.status(500).json({
+      message: "Server error",
+    });
+  }
+};
 export const profile = async (req, res) => {
   try {
     const { userId } = req.params;
-
-    // Fetch user and populate "following" with only necessary fields
     const user = await User.findById(userId)
       .select("-password")
-      .populate("following", "_id username profileImage");
+      .populate("following", "_id username profileImage")
+      .populate("followers", "_id username profileImage");
 
-    const followers = await Follower.find({ followingId: userId })
-      .populate("followerId", "_id username profileImage")
-      .select("followerId");
-      console.log(followers)
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Fetch posts with necessary fields and populate related data
+    
     const posts = await Post.find({ postedBy: userId })
       .populate("postedBy", "username profileImage")
       .populate("comments.commentedBy", "username")
       .populate("likes");
 
-    // Transform posts to include likesCount and hasLiked
+   
     const postsWithLikes = posts.map((post) => ({
       ...post.toObject(),
       likesCount: post.likes.length,
       hasLiked: req.user
-        ? post.likes.some((like) => like.userId.toString() === req.user.id)
+        ? post.likes.some((like) => like.userId.toString() === req.user._id)
         : false,
     }));
 
     const isFollowing = !!(await Follower.findOne({
-      followerId: req.user.id,
+      followerId: req.user._id,
       followingId: userId,
     }));
-
-    console.log(isFollowing);
 
     res.status(200).json({
       ...user.toObject(),
       posts: postsWithLikes,
-      followers: followers.map((follower) => follower.followerId),
+      followers: user.followers,
       isFollowing,
-      isMe: req.user ? req.user.id === userId : false,
+      isMe: req.user ? req.user._id === userId : false,
     });
   } catch (err) {
     console.error("Profile Fetch Error:", err);
@@ -106,7 +128,7 @@ export const profile = async (req, res) => {
 
 export const updateProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
+    const user = await User.findById(req.user._id);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
@@ -122,43 +144,71 @@ export const updateProfile = async (req, res) => {
     await user.save();
     res.status(201).json(user);
   } catch (err) {
+  console.error(err);
+      res.status(500).json(
+      { message: "Server error" });
+   }
+ };
+export const getFollowers = async(req,res) => {
+  try {
+    const followers = await Follower.find({ followingId: req.user._id }) 
+    .populate("followerId", "_id username profileImage bio") 
+    .lean();
+    res.status(200).json(followers);
+  } catch (error) {
+    console.error(error);
     res.status(500).json({ message: "Server error" });
   }
-};
+}
 
 export const followUser = async (req, res) => {
   try {
     const userId = req.params.id;
-    const currentUser = req.user.id;
+    const currentUser = req.user._id;
+
     if (userId === currentUser) {
-      return res.status(400).json({ message: "You cannot follow yourself" });
+      return res.status(400).json({ 
+        message: "You cannot follow yourself"
+       });
     }
     const existingFollow = await Follower.findOne({
       followerId: currentUser,
       followingId: userId,
     });
     if (existingFollow) {
+      //remove follow 
       await Follower.findOneAndDelete({
         followerId: currentUser,
         followingId: userId,
       });
+      //remove from current user's following
       await User.findByIdAndUpdate(currentUser, {
         $pull: { following: userId },
       });
+
       console.log("User unfollowed successfully");
+      await User.findByIdAndUpdate(userId, {
+        $pull: { followers: currentUser },
+      });
 
       return res.status(200).json({
         message: "User unfollowed successfully",
       });
     } else {
+      //create follow
       await Follower.create({
         followerId: currentUser,
         followingId: userId,
       });
+      //add current user following
       await User.findByIdAndUpdate(currentUser, {
-        $push: { following: userId },
+        $addToSet: { following: userId },
       });
-      console.log("User followed successfully");
+
+      await User.findByIdAndUpdate(userId, {
+      $addToSet: { followers: currentUser },
+    });
+
       return res.status(201).json({
         message: "User followed successfully",
         userId: userId,
@@ -166,6 +216,8 @@ export const followUser = async (req, res) => {
     }
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ 
+      message: "Server error" 
+    });
   }
 };

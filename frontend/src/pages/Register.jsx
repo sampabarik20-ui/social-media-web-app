@@ -1,11 +1,13 @@
 import React, { useState } from "react";
-import axios from "axios";
+import api from "../api";
 import Alert from "../components/Alert";
+import { Link,useNavigate } from "react-router-dom";
 
 const Register = () => {
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+ 
 
   const [formData, setFormData] = useState({
     email: "",
@@ -14,6 +16,7 @@ const Register = () => {
     confirmPassword: "",
   });
 
+  const navigate = useNavigate();
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (formData.password !== formData.confirmPassword) {
@@ -22,10 +25,8 @@ const Register = () => {
     }
     setLoading(true);
     try {
-      const response = await axios.post(
-        "http://localhost:3000/api/users/register",
-        formData
-      );
+      const response = await api.post(
+        "users/register", formData );
       if (!response.data.message) {
         setErrorMessage("Something went wrong");
         return;
@@ -33,7 +34,7 @@ const Register = () => {
       setSuccessMessage(response.data.message);
       setErrorMessage("");
       setTimeout(() => {
-        window.location.href = "/login";
+        navigate("/login");
       }, 2000);
     } catch (err) {
       setErrorMessage(err.response?.data?.message || "An error occurred");
@@ -111,7 +112,7 @@ const Register = () => {
             </button>
           </form>
           <div className="text-center mt-3">
-            Already have an account? <a href="/login">Login</a>
+            Already have an account? <Link to="/login">Login</Link>
           </div>
         </div>
       </div>

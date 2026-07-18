@@ -1,6 +1,4 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-
-import _ from "lodash";
 import api from "../api";
 
 export const fetchSuggestions = createAsyncThunk(
@@ -10,7 +8,7 @@ export const fetchSuggestions = createAsyncThunk(
       const response = await api.get("/suggestions");
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response.data);
+      return rejectWithValue(error.response.data) || "Failed to fetch suggestions";
     }
   }
 );
@@ -25,7 +23,7 @@ const suggestionsSlice = createSlice({
   reducers: {
     removeSuggestion: (state, action) => {
       state.suggestions = state.suggestions.filter(
-        (user) => user.id !== action.payload
+        (user) => user._id !== action.payload
       );
     },
   },

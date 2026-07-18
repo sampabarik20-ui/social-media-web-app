@@ -1,6 +1,7 @@
 import  { useEffect, useState } from "react";
 import api from "../api";
 import { Link } from "react-router";
+import imageUrl from "../utils/imageUrl";
 
 const RightSidebar = () => {
   const [followers, setFollowers] = useState([]);
@@ -8,10 +9,9 @@ const RightSidebar = () => {
     const fetchFollowers = async () => {
       try {
         const response = await api.get(
-          "http://localhost:3000/api/users/followers"
+          "users/followers"
         );
         const data = await response.data;
-        console.log(data);
         setFollowers(data);
       } catch (error) {
         console.error("Error fetching followers:", error);
@@ -19,7 +19,7 @@ const RightSidebar = () => {
     };
     fetchFollowers();
   }, []);
-  console.log(followers);
+  
   return (
     <div className="col-lg-3 d-none d-lg-block">
       {/* Suggestions / Ads / Trending Topics */}
@@ -30,13 +30,15 @@ const RightSidebar = () => {
             <p className="text-muted">No followers yet.</p>
           ) : (
             <ul className="list-group list-group-flush">
-              {followers.map((follower) => (
+              {followers
+                 .filter((follower) => follower.followerId)
+                 .map((follower) =>  (
                 <li
                   key={follower.followerId._id}
                   className="list-group-item d-flex align-items-center"
                 >
                   <img
-                    src={`http://localhost:3000/uploads/${follower.followerId.profileImage}`}
+                    src={imageUrl(follower.followerId.profileImage)}
                     alt={`${follower.followerId.username}'s profile`}
                     className="rounded-circle me-3"
                     style={{

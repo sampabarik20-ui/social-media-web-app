@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchSuggestions, removeSuggestion } from "../reducers/suggestionsReducer";
 import { toggleFollow } from "../reducers/profileReducer";
-import { remove } from "lodash";
+import imageUrl from "../utils/imageUrl";
 
 const Sidebar = () => {
   const dispatch = useDispatch();
@@ -14,42 +14,29 @@ const Sidebar = () => {
     dispatch(fetchSuggestions());
   }, [dispatch]);
 
-  const handleFollow = (id) => {
-
-    
-    dispatch(toggleFollow(id));
+  const handleFollow = async (id) => {
+    await dispatch(toggleFollow(id));
     dispatch(removeSuggestion(id))
   }
-  if (loading) return <div className="text-center mt-5">Loading...</div>;
-  if (error) return <div className="alert alert-danger">{error.message || "An error occurred"}</div>;
+  if (loading)
+     return <div className="text-center mt-5">
+      Loading...</div>;
+  if (error) 
+    return <div className="alert alert-danger">
+      {error.message || "An error occurred"}
+      </div>;
 
-  console.log(suggestions);
 
   return (
     <div className="sticky-top">
-      {/* <div className="card mb-4">
-        <div className="card-body">
-          <h5>Your Activity</h5>
-          <ul className="list-unstyled">
-            <li>
-              <a href="#">Friends</a>
-            </li>
-            <li>
-              <a href="#">Groups</a>
-            </li>
-            <li>
-              <a href="#">Events</a>
-            </li>
-          </ul>
-        </div>
-      </div> */}
       <div className="card">
         <div className="card-body">
           <h5>Suggestions</h5>
           <ul className="list-unstyled">
             {suggestions.map((user) => (
+            
               <li 
-                key={user.id} 
+                key={user._id} 
                 className="mb-2 p-2 border rounded shadow-sm"
                 style={{
                   cursor: "pointer",
@@ -62,7 +49,7 @@ const Sidebar = () => {
                 <div className="d-flex align-items-center justify-content-between">
                   <div className="d-flex align-items-center">
                     <img
-                      src={`http://localhost:3000/uploads/${user.profileImage}`} 
+                      src={imageUrl(user.profileImage)} 
                       alt={user.username}
                       width="30"
                       height="30"
@@ -70,7 +57,11 @@ const Sidebar = () => {
                     />
                     {user.username}
                   </div>
-                  <button className="btn btn-outline-primary" onClick={() => handleFollow(user.id)}>Follow</button>
+                  <button className="btn btn-outline-primary" 
+                     onClick={() =>
+                     handleFollow(user._id)}>
+                     Follow
+                   </button>
                 </div>
               </li>
             ))}

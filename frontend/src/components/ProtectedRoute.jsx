@@ -1,15 +1,12 @@
-import { Navigate } from "react-router";
-
+import { Navigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
-
-import api from "../api";
 import { useState, useEffect } from "react";
 
 const ProtectedRoute = ({ children }) => {
   const [isAuthorized, setIsAuthorized] = useState(null);
   useEffect(() => {
     checkAuth().catch(() => setIsAuthorized(false));
-  });
+  }, []);
 
   const checkAuth = async () => {
     const token = localStorage.getItem("token");
