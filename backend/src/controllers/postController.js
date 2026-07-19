@@ -16,7 +16,7 @@ export const createPost = async (req, res) => {
     const post = new Post({
       content,
       postedBy: req.user._id,
-      image: req.file ? req.file.filename : null,
+      image: req.file ? req.file.path : null,
     });
     await post.save();
     const populatedPost = await Post.findById(post._id)

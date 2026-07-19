@@ -136,10 +136,10 @@ export const updateProfile = async (req, res) => {
     user.email = req.body.email || user.email;
     user.bio = req.body.bio || user.bio;
     if (req.files && req.files.profileImage) {
-      user.profileImage = req.files.profileImage[0].filename;
+      user.profileImage = req.files.profileImage[0].path;
     }
     if (req.files && req.files.coverImage) {
-      user.coverImage = req.files.coverImage[0].filename;
+      user.coverImage = req.files.coverImage[0].path;
     }
     await user.save();
     res.status(201).json(user);
