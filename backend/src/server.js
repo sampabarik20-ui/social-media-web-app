@@ -16,7 +16,7 @@ import notificationRouter from "./routes/notificationRoute.js";
 import { Server } from "socket.io";
 
 const app = express();
-const port =  process.env.PORT;
+const port =  process.env.PORT || 3000;
 
 // Middlewares
 app.use(cors());
@@ -34,7 +34,13 @@ mongoose
   });
 
 // Serving static files 
-app.use("/uploads", express.static(path.join(path.resolve(), "/uploads")));
+app.use("/uploads", express.static(
+  path.join(path.resolve(),
+   "/uploads")));
+
+app.get("/", (req, res) => {
+  res.send("Home working well");
+});
 
 // Routes
 app.use("/api/users", userRouter);
@@ -53,12 +59,12 @@ const io = new Server(server, {
   },
 });
 
-// Handling Socket.io Connections
+//  Socket.io Connections
 io.on("connection", (socket) => {
   
   socket.on("joinRoom", (userId) => {
 
-    socket.join(userId); // Joining the room for the user
+    socket.join(userId); 
   });
   socket.on("disconnect", () => {
     console.log("A user disconnected:", socket.id);
